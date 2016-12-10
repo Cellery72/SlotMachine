@@ -98,14 +98,18 @@
     <Content Include="Resources\bet_line.gif" />
     <Content Include="Resources\blank.gif" />
     <Content Include="Resources\cherry.gif" />
+    <None Include="Resources\exit.png" />
     <Content Include="Resources\grapes.gif" />
+    <None Include="Resources\nocredit.png" />
     <Content Include="Resources\orange.gif" />
     <Content Include="Resources\powerbutton.gif" />
     <Content Include="Resources\reset.gif" />
     <None Include="Resources\reset.png" />
     <Content Include="Resources\seven.gif" />
     <Content Include="Resources\slotmachine.gif" />
+    <None Include="Resources\spin%282%29.png" />
     <Content Include="Resources\spin.gif" />
+    <None Include="Resources\spin.png" />
     <Content Include="Resources\spin_disabled.gif" />
     <Content Include="Resources\spin_pressed.gif" />
   </ItemGroup>

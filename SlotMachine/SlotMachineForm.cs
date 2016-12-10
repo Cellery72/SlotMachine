@@ -1,14 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
+
+/// <summary>
+///  Description: This form represents a slot machine and allows the user to enter bets while keeping tally
+///       Author: Justin Ellery
+///         Date: Dec 10th 2016
+/// </summary>
 namespace SlotMachine
 {
     public partial class SlotMachineForm : Form
@@ -34,9 +36,9 @@ namespace SlotMachine
         private int sevens = 0;
         private int blanks = 0;
         private int totalWinnings = 0;
-
         private Random random = new Random();
 
+        // default constructor
         public SlotMachineForm()
         {
             InitializeComponent();
@@ -45,7 +47,7 @@ namespace SlotMachine
 
         // Event Handlers
         // **************
-        private void SpinPictureBox_Click(object sender, EventArgs e)
+        private void SpinButton_Click(object sender, EventArgs e)
         {
 
             if (playerMoney == 0)
@@ -79,6 +81,7 @@ namespace SlotMachine
             {
                 MessageBox.Show("Please enter a valid bet amount");
             }
+            CheckBetAmount();
         }
         private void SlotMachineForm_Load(object sender, EventArgs e)
         {
@@ -87,16 +90,51 @@ namespace SlotMachine
             // set labels to dollar amounts
             setPlayerStats();
         }
-        private void ResetPictureBox_Click(object sender, EventArgs e)
+        private void ResetButton_Click(object sender, EventArgs e)
         {
             resetAll();
             setPlayerStats();
             resetFruitTally();
+            ResetReels();
+            CheckBetAmount();
+            JackpotWinner(false);
+        }
+        private void BetButton_Click(object sender, EventArgs e)
+        {
+            // set player bet amount
+            playerBet = Int32.Parse((sender as PictureBox).Tag.ToString());
+            // update labels
+            setPlayerStats();
+            // make sure amount is ok
+            CheckBetAmount();
+        }
+        private void BetTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            Regex pattern = new Regex(@"^\$(?=.*\d)\d{0,8}?$");
+            TextBox tb = (sender as TextBox);
+            if (!pattern.IsMatch(tb.Text))
+            {
+                SpinButton.Enabled = false;
+                ErrorProvider.SetError(tb, "Must be valid dollar amount (ie. $7200).");
+            }
+            else
+            {
+                playerBet = Int32.Parse(BetTextBox.Text.Substring(1));
+                ErrorProvider.SetError(tb, "");
+                CheckBetAmount();
+                SpinButton.BackgroundImage = Properties.Resources.spin;
+                BetLabel.Text = BetTextBox.Text;
+            }
+        }
+        private void ExitButton_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
         }
 
 
         // Private Functions
         // *******************
+        // Provides the Results for the Reels displayed on the screen
         private void DisplayResults(string[] arr)
         {
             if (arr.Count()>0)
@@ -108,6 +146,26 @@ namespace SlotMachine
                 Reel1PictureBox.BackgroundImage = (Image)Properties.Resources.ResourceManager.GetObject(first);
                 Reel2PictureBox.BackgroundImage = (Image)Properties.Resources.ResourceManager.GetObject(second);
                 Reel3PictureBox.BackgroundImage = (Image)Properties.Resources.ResourceManager.GetObject(third);
+            }
+        }
+        // Resets the Reel images
+        private void ResetReels()
+        {
+            Reel1PictureBox.BackgroundImage = null;
+            Reel2PictureBox.BackgroundImage = null;
+            Reel3PictureBox.BackgroundImage = null;
+        }
+        // Checks the Bet Amount to the players total money
+        private void CheckBetAmount()
+        {
+            if (playerBet > playerMoney)
+            {
+                SpinButton.Enabled = false;
+            }
+            else
+            {
+                SpinButton.Enabled = true;
+                SpinButton.BackgroundImage = Properties.Resources.spin;
             }
         }
         /* Utility function to show Player Stats */
@@ -126,6 +184,7 @@ namespace SlotMachine
             TotalCreditsLabel.Text = "$" + playerMoney.ToString();
             BetLabel.Text = "$" + playerBet.ToString();
             WinnerPaidLabel.Text = "$" + totalWinnings.ToString();
+            BetTextBox.Text = "$" + playerBet.ToString();
         }
         /* Utility function to reset all fruit tallies*/
         private void resetFruitTally()
@@ -163,16 +222,29 @@ namespace SlotMachine
                 MessageBox.Show("You Won the $" + jackpot + " Jackpot!!","Jackpot!!");
                 winnings += jackpot;
                 jackpot = 1000;
+                JackpotWinner(true);
             }
         }
-        /* Utility function to show a win message and increase player money */
+        // displays the label if the jackpot is won
+        private void JackpotWinner(bool isWinner)
+        {
+
+            GagnantLabel.Visible = isWinner;
+            WinnerLabel.Visible = isWinner;
+        }
+        /* Utility function to showb a win message and increase player money */
         private void showWinMessage()
         {
             // check jackpot
             checkJackPot();
             // concat winnings 
             playerMoney += winnings;
-            MessageBox.Show("You Won: $" + winnings, "Winner!");
+            DialogResult res = MessageBox.Show("You Won: $" + winnings, "Winner!");
+            if(res == DialogResult.OK)
+            {
+                // no longer are they the jackpot winner.... :( 
+                JackpotWinner(false);
+            }
             // reset the tally
             resetFruitTally();
         }
@@ -180,6 +252,8 @@ namespace SlotMachine
         private void showLossMessage()
         {
             playerMoney -= playerBet;
+            jackpot += playerBet;
+            JackpotLabel.Text = "$" + jackpot.ToString();
             MessageBox.Show("You Lost!", "Loss!");
             resetFruitTally();
         }
@@ -189,8 +263,7 @@ namespace SlotMachine
             return (value >= lowerBounds && value <= upperBounds) ? true : false;
             
         }
-        /* When this function is called it determines the betLine results.
-        e.g. Bar - Orange - Banana */
+        // When this function is called it determines the betLine results.
         private string[] Reels()
         {
             string[] betLine = { " ", " ", " " };
